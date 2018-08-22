@@ -1,0 +1,135 @@
+##-------------- 
+# **************************************************************************** #
+# ***************                Project Overview              *************** #
+# **************************************************************************** #
+
+# Author:      Dominick Lemas 
+# Date:        August 08, 2018 
+# IRB:
+# Description: Analysis of recruitment/encounter data extracted from RedCap. 
+# Data: C:\Users\djlemas\Dropbox (UFL)\02_Projects\BEACH_INTERVIEW\RedCap\ALL_DATA
+# Obj: Format data and basic analysis.
+
+# **************************************************************************** #
+# ***************                Library                       *************** #
+# **************************************************************************** #
+
+# Load libraries (run the install first time for package)
+# install.packages("ggplot2")
+# install.packages("lubridate")
+# install.packages("dplyr")
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(readr)
+
+# **************************************************************************** #
+# ***************  BEACHInterviewOperat_ENCOUNTER_DATA_2018-08-08_1407.csv                                              
+# **************************************************************************** # 
+
+#Read Data
+encounter<- read_csv("Desktop/Research/Data/BEACHInterviewOperat_ENCOUNTER_DATA_2018-08-08_1407 (1).csv")
+
+# what are the variable names
+names(encounter)
+head(encounter)
+
+# limit to only a few variables
+encounter.s=encounter[,c(1,3:4)]
+names(encounter.s)
+head(encounter.s)
+
+# **************************************************************************** #
+# ***************  format data                                              
+# **************************************************************************** # 
+
+# what is the structure of the data
+str(encounter.s)
+
+# reformat variables
+encounter.s$encounter_date_int=as.Date(encounter.s$encounter_date_int, "%m/%d/%Y")
+encounter.s$encounter_type_int=as.factor(encounter.s$encounter_type_int)
+encounter.s$encounter_type_int=recode(encounter.s$encounter_type_int, "1"="email", "2"="phone", "3"="other")
+levels(encounter.s$encounter_type_int)
+
+# format dates for plot
+df2=encounter.s %>%
+  mutate(month_name = month(encounter_date_int, label = TRUE)) %>%
+  mutate(year_name = year(encounter_date_int)) %>%
+  group_by(year_name,month_name,encounter_type_int) %>%
+  tally() %>%
+  mutate(month_yr=paste(month_name,year_name, sep="_")) 
+df2$month_yr=as.factor(df2$month_yr)
+levels(df2$month_yr)
+
+# add data for missing months (Jul_2017, Aug_2017, Sep_2017)
+  # Jul_2017
+    df.jul_2017=data.frame(as.numeric("2017"),as.factor("Jul"),as.factor("email"),as.integer("0"),as.factor("Jul_2017"))
+    names(df.jul_2017)=c("year_name","month_name","encounter_type_int","n","month_yr")
+    names(df.jul_2017)
+    str(df.jul_2017)
+  
+    # reformat "df2" to data.frame
+    df2.new=as.data.frame(df2)
+    
+    # check structure (looks great!)
+    str(df2.new)
+    str(df.jul_2017)
+    
+    # check names (looks great)
+    names(df2.new)
+    names(df.jul_2017)
+    
+    # bind data.frames together as rows using rbind()
+    df3=rbind(df2.new,df.jul_2017)
+    names(df3)
+    
+  # Aug_2017
+    df.Aug_2017=data.frame(as.numeric("2017"),as.factor("Aug"),as.factor("email"),as.integer("0"),as.factor("Aug_2017"))
+    names(df.Aug_2017)=c("year_name","month_name","encounter_type_int","n","month_yr")
+    names(df.Aug_2017)
+    str(df.Aug_2017)
+    
+    # check structure (looks great!)
+    str(df3)
+    str(df.Aug_2017)
+    
+    # check names (looks great)
+    names(df3)
+    names(df.Aug_2017)
+    
+    # bind data.frames together as rows using rbind()
+    df4=rbind(df3,df.Aug_2017)
+    names(df4)
+    
+  # Sep_2017
+    df.Sep_2017=data.frame(as.numeric("2017"),as.factor("Sep"),as.factor("email"),as.integer("0"),as.factor("Sep_2017"))
+    names(df.Sep_2017)=c("year_name","month_name","encounter_type_int","n","month_yr")
+    names(df.Sep_2017)
+    str(df.Sep_2017)
+    
+    # check structure (looks great!)
+    str(df4)
+    str(df.Sep_2017)
+    
+    # check names (looks great)
+    names(df3)
+    names(df.Sep_2017)
+    
+    # bind data.frames together as rows using rbind()
+    df5=rbind(df4,df.Sep_2017)
+    names(df5)
+    
+# ordering the levels/months-yr (remember to add to list)
+df5$month_yr <- ordered(df5$month_yr, levels = c("Jun_2017","Jul_2017","Aug_2017","Sep_2017" "Oct_2017","Nov_2017","Dec_2017","Jan_2018",
+                                                 "Feb_2018","Mar_2018","Apr_2018","May_2018"))
+# check levels
+levels(df3$month_yr)
+# **************************************************************************** #
+# ***************  plot data                                              
+# **************************************************************************** # 
+
+# plot counts of "encounter_type_int" according to time
+p=ggplot(df3, aes(x=month_yr, y=n, fill=encounter_type_int)) + geom_bar(stat="identity")
+
+p+ggtitle("BEACH Interview Encounters: \n 2017-2018")
